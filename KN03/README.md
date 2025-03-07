@@ -30,7 +30,7 @@ Container im default bridge Netzwerk (busybox1, busybox2) haben Adressen im Bere
 
 Das heisst wenn man Zugriff mit Default bridge hat kann man es nur durch IP-Adressen zugreifen.
 
-und User defined kann man sowohl per Name und oder per IP-Adresse erreichen.
+User defined kann man sowohl per Name und oder per IP-Adresse erreichen.
 
 Es gibt keine direkte Kommunikation zwischen Containern aus unterschiedlichen Netzwerken.
 
