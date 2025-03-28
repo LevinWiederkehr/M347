@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  container1:
+    image: nginx
+    container_name: KN05CContainer1
+    volumes:
+      - type: volume
+        source: KN05CVolume
+        target: /mnt/volume
+      - type: bind
+        source: ./bindmount-data
+        target: /mnt/bindmount
+      - type: tmpfs
+        target: /mnt/tmpfs
+
+  container2:
+    image: nginx
+    container_name: KN05CContainer2
+    volumes:
+      - KN05CVolume:/mnt/volume
+
+volumes:
+  KN05CVolume:
