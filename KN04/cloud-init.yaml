@@ -1,0 +1,128 @@
+#cloud-config
+# source: https://gist.github.com/syntaqx/9dd3ff11fb3d48b032c84f3e31af9163
+users:
+  - name: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    home: /home/ubuntu
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCUBo+qnNu5xxM9vfz4C04M36FHxHNrEMdm5TkFj1/SfVtqunlUOeMpu7nFCZZKnX8HYwf/MkjcBiTYAgncxku8grwl6XuW/pcvmb6/ghSIaw4xtRRSzit7omqJ5d8kXB3+Nd1aaMHsjfly4nkaqswhySVXQqr8Hw6DbWVw8jLLVKEE+5NZHY33hJkhJwK4blCllsGpmQaKi1qxjsN0hZOWNK01iJAydwD8t2xJ0NOYbq8Qas5IyPnRN7SPxvEhIP6WLQ6Ym6Dmf8FwNW1cHLTKabgjzt5f/HKUkKS89dPd3fn4nnFli1BOMECGUIvVlOw2pQNri7+04OOfn2FGlqr5 teacher
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJ9o6eXSQx6Z2q9wS8rCtWF2Nlv5IUWuhExtvf+kNb0vUo5/BgsSpwo2PRHDUZm9vNV7LN72ppy/ktfjGqRMnCoHF1yR0wOgw6wS989IPvEbrcABLXCSFI9HUzLg7IRUX4RusWAAeUKUfEsGkFk1FQmJNAgEvu7OSiWaddaDE6f7HNKZgE8Ijp+y5vqGxn6aeULDpiA8HG8BCsabqjJ3nhoVYd0RzlmWZqiHJG+Yffo/tgA7TPrJarQAVdNomBGO6e665oo90pogYZfVXxrjLQJTqcJxKx58ccJQaTAgzkQPJQH4EK7xEoEGTzRStbA1sO5kJ5PAkCbqbDpS7ffSjR student
+
+ssh_pwauth: false
+disable_root: false
+package_update: true
+package_upgrade: true
+groups:
+  - docker
+system_info:
+  default_user:
+    groups: [docker]
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - unattended-upgrades
+final_message: "Das System wurde erfolgreich aufgesetzt und Docker Compose läuft. Die Anwendung ist über http://SERVER_IP:8080 erreichbar."
+
+write_files:
+  - content: |
+      version: '3.8'
+      services:
+        web:
+          build:
+            context: .
+            dockerfile: Dockerfile.web
+          container_name: m347-kn04a-web
+          ports:
+            - "80:80"
+          networks:
+            kn04a-network:
+              ipv4_address: 172.10.5.2
+          depends_on:
+            - db
+        db:
+          image: mariadb:latest
+          container_name: m347-kn04a-db
+          environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: mydatabase
+            MYSQL_USER: user
+            MYSQL_PASSWORD: password
+          networks:
+            kn04a-network:
+              ipv4_address: 172.10.5.3
+          ports:
+            - "3306:3306"
+      networks:
+        kn04a-network:
+          driver: bridge
+          ipam:
+            driver: default
+            config:
+              - subnet: 172.10.0.0/16
+                ip_range: 172.10.5.0/24
+                gateway: 172.10.5.254
+    path: /home/ubuntu/docker-compose.yml
+    permissions: '0644'
+
+  - content: |
+      FROM php:8.0-apache
+      
+      RUN docker-php-ext-install mysqli
+      
+      # Aktiviere Apache mod_rewrite
+      RUN a2enmod rewrite
+      
+      # Kopiere PHP-Dateien
+      COPY info.php /var/www/html/
+      COPY db.php /var/www/html/
+      
+      # Setze Berechtigungen
+      RUN chown -R www-data:www-data /var/www/html/
+    path: /home/ubuntu/Dockerfile.web
+    permissions: '0644'
+
+  - content: |
+      <?php
+      phpinfo();
+      ?>
+    path: /home/ubuntu/info.php
+    permissions: '0644'
+
+  - content: |
+      <?php
+      $host = 'm347-kn04a-db';
+      $user = 'user';
+      $password = 'password';
+      $database = 'mydatabase';
+      
+      $conn = new mysqli($host, $user, $password, $database);
+      
+      if ($conn->connect_error) {
+          die("Verbindung fehlgeschlagen: " . $conn->connect_error);
+      }
+      
+      echo "Datenbankverbindung erfolgreich!<br>";
+      echo "Server IP: " . $_SERVER['SERVER_ADDR'] . "<br>";
+      echo "DB Host: " . $host . "<br>";
+      ?>
+    path: /home/ubuntu/db.php
+    permissions: '0644'
+
+runcmd:
+  - mkdir -p /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  - systemctl enable docker
+  - systemctl start docker
+  - chown -R ubuntu:ubuntu /home/ubuntu/
+  - cd /home/ubuntu
+  - sleep 10  # Kleine Pause, um sicherzustellen, dass Docker vollständig initialisiert ist
+  # - docker compose up -d
+  - echo "Installation und Konfiguration abgeschlossen. Die Anwendung sollte jetzt über die IP-Adresse auf Port 8080 erreichbar sein."

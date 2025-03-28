@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  web:
+    image: levinwiederkehr/kn02b-web:latest
+    container_name: m347-kn04b-web
+    ports:
+      - "8080:80"
+    networks:
+      kn04b-network:
+        ipv4_address: 172.30.5.2
+    depends_on:
+      - db
+
+  db:
+    image: levinwiederkehr/kn02b-db:latest
+    container_name: m347-kn04b-db
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    networks:
+      kn04b-network:
+        ipv4_address: 172.30.5.3
+    ports:
+      - "3306:3306"
+
+networks:
+  kn04b-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.0.0/16
+          ip_range: 172.30.5.0/24
+          gateway: 172.30.5.254
