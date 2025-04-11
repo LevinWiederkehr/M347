@@ -37,7 +37,7 @@ Beispiel: Ein Apache Kafka Cluster, bei dem jeder Broker eine eindeutige Identit
 
 2. 
 ![alt describenode1](describenode1.png)
-![alt describemaster](describeMaster.png)
+![alt describemaster](describemaster.png)
 
 3. Der Wert mongo-url: mongo-service ist korrekt, da er dem Namen des MongoDB-Services im Kubernetes-Cluster entspricht. Kubernetes stellt automatisch einen internen DNS-Namen für Services bereit, sodass andere Pods (wie z. B. die WebApp) den MongoDB-Service direkt über diesen Namen erreichen können. Dadurch bleibt die Konfiguration flexibel und clusterintern auflösbar.
 
